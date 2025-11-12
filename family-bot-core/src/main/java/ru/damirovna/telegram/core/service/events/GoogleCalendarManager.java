@@ -29,9 +29,6 @@ public class GoogleCalendarManager {
             Collections.singletonList(CalendarScopes.CALENDAR_EVENTS);
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
-    //    File
-//    InputStream jsonFile = new FileInputStream(new File(System.getenv("HOME") + "/" + System.getenv("PRIVATE_KEY_NAME")));
-    private static NetHttpTransport httpTransport;
     private static Calendar calendar;
 
     private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT)
@@ -60,6 +57,7 @@ public class GoogleCalendarManager {
         c.add(java.util.Calendar.DATE, n);
         return c.getTime();
     }
+//    TODO Add events to DB
 
     public List<Event> getEvents(int days) throws IOException, GeneralSecurityException {
         if (calendar == null) {
@@ -79,8 +77,7 @@ public class GoogleCalendarManager {
     }
 
     public void getCalendar() throws GeneralSecurityException, IOException {
-        httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-//            dataStoreFactory = new FileDataStoreFactory(DATA_STORE_DIR);
+        NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 
         calendar =
                 new Calendar.Builder(httpTransport, JSON_FACTORY, getCredentials(httpTransport))

@@ -69,12 +69,13 @@ public class WeatherApiManager {
     public Weather getWeather(double longitude, double latitude) throws IOException {
         Location location = new Location(longitude, latitude);
         Optional<Weather> optionalWeather = weatherManager.getWeatherByLocation(location.getName());
-        if (!optionalWeather.isPresent()) {
+        if (optionalWeather.isPresent()) {
             if (optionalWeather.get().isActual()) {
                 return optionalWeather.get();
             }
         }
         Weather result;
+//       TODO: Add choosing of resource to Telegram bot
         if (source.equals("YANDEX")) {
             result = getWeatherByYandex(location);
         } else {

@@ -78,6 +78,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
             saveLocation(chatId, message.getLocation());
             return;
         }
+//        TODO add event creation
         switch (messageText) {
             case START -> start(chatId);
             case SET_TIME -> setTime(chatId);
@@ -89,6 +90,11 @@ public final class Bot extends TelegramLongPollingCommandBot {
         }
 
     }
+
+//    TODO add worck with DB
+//    TODO add scheduled actions:
+//      daily messages
+//      daily weatherUpdate
 
     private void setTime(Long chatId) {
         UserData userData = getUserData(chatId);
