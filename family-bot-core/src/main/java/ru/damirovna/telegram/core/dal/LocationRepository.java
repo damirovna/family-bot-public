@@ -29,7 +29,7 @@ public class LocationRepository extends BaseRepository<Location> {
 
     public Location save(Location location) throws SQLException {
         Optional<Location> findLocation = getLocationByName(location.getName());
-        if (!findLocation.isPresent()) {
+        if (findLocation.isPresent()) {
             return findLocation.get();
         }
         int id = insert(
