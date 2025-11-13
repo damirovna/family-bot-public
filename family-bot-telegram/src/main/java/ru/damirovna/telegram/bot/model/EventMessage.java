@@ -5,9 +5,9 @@ import ru.damirovna.telegram.common.DayOfWeek;
 import ru.damirovna.telegram.core.model.Event;
 
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 
+import static ru.damirovna.telegram.common.Constants.DATA_FORMATTER_GET_DAY;
 import static ru.damirovna.telegram.common.Constants.DATA_FORMATTER_GET_TIME;
 
 
@@ -27,26 +27,27 @@ public class EventMessage {
         sb.append(events.size());
         sb.append("\n");
 
-        Calendar c = Calendar.getInstance();
         int currentDayOfWeek = -1;
         for (Event e : events) {
-            Date start = e.getStart();
-            Date end = e.getEnd();
-            c.setTime(start);
-            if (currentDayOfWeek != c.get(Calendar.DAY_OF_WEEK)) {
-                sb.append("<b>");
-                sb.append(DayOfWeek.values()[c.get(Calendar.DAY_OF_WEEK) - 1].getNameOfWeek());
+            if (currentDayOfWeek != e.getStart().get(Calendar.DAY_OF_WEEK)) {
+                sb.append("\n\n<b>");
+                sb.append(DayOfWeek.values()[e.getStart().get(Calendar.DAY_OF_WEEK) - 1].getNameOfWeek());
                 sb.append("</b>");
-                sb.append("\n");
-                currentDayOfWeek = c.get(Calendar.DAY_OF_WEEK);
+                sb.append("\n\n");
+                currentDayOfWeek = e.getStart().get(Calendar.DAY_OF_WEEK);
             }
             sb.append("<u>");
             sb.append(e.getSummary());
             sb.append("</u>");
             sb.append("\n");
-            sb.append(DATA_FORMATTER_GET_TIME.format(start));
-            sb.append(" - ");
-            sb.append(DATA_FORMATTER_GET_TIME.format(end));
+            if ((e.getEnd().get(Calendar.DAY_OF_MONTH) - e.getStart().get(Calendar.DAY_OF_MONTH)) > 0) {
+                sb.append("Весь день: ");
+                sb.append(DATA_FORMATTER_GET_DAY.format(e.getStart().getTime()));
+            } else {
+                sb.append(DATA_FORMATTER_GET_TIME.format(e.getStart().getTime()));
+                sb.append(" - ");
+                sb.append(DATA_FORMATTER_GET_TIME.format(e.getEnd().getTime()));
+            }
             sb.append("\n");
             if (e.getLocation() != null) {
                 sb.append("\uD83D\uDCCD <i>");

@@ -8,6 +8,9 @@ import ru.damirovna.telegram.core.model.Weather;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.ParseException;
+
+import static ru.damirovna.telegram.common.Constants.DATA_FORMATTER_GET_TIME;
 
 @Component
 public class UserRowMapper implements RowMapper<User> {
@@ -16,7 +19,13 @@ public class UserRowMapper implements RowMapper<User> {
         User user = new User();
         user.setId(resultSet.getInt("id"));
         user.setChatId(Long.valueOf(resultSet.getString("chat_id")));
-        user.setTimeForMessages(resultSet.getTime("date_notification"));
+        try {
+            if (resultSet.getString("date_notification") != null) {
+                user.setTimeForMessages(DATA_FORMATTER_GET_TIME.parse(resultSet.getString("date_notification")));
+            }
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
         user.setName(resultSet.getString("name"));
         user.setCurrentProcess(resultSet.getString("current_process"));
         Location location = new Location(resultSet.getInt("location_id"), resultSet.getDouble("longitude"), resultSet.getDouble("latitude"), resultSet.getString("location_name"));

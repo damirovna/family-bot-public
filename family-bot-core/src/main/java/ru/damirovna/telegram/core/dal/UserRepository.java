@@ -9,6 +9,8 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
+import static ru.damirovna.telegram.common.Constants.DATA_FORMATTER_GET_TIME;
+
 
 @Repository
 public class UserRepository extends BaseRepository<User> {
@@ -16,8 +18,11 @@ public class UserRepository extends BaseRepository<User> {
     private static final String INSERT_QUERY = "INSERT INTO public.users(\n" +
             "\tname, date_notification, chat_id, location_id, current_process)\n" +
             "\tVALUES (?, ?, ?, ?, ?)";
-    private static final String UPDATE_QUERY = "UPDATE public.users\n" +
+    private static final String UPDATE_QUERY_WITH_LOCATION = "UPDATE public.users\n" +
             "\tSET  name=?, date_notification=?, location_id=?, current_process=?\n" +
+            "\tWHERE chat_id=?";
+    private static final String UPDATE_QUERY_WITHOUT_LOCATION = "UPDATE public.users\n" +
+            "\tSET  name=?, date_notification=?, current_process=?\n" +
             "\tWHERE chat_id=?";
     private static final String FIND_ALL_QUERY = "SELECT\n" +
             "\tu.*, l.*, w.* \n" +
@@ -51,7 +56,7 @@ public class UserRepository extends BaseRepository<User> {
         int id = insert(
                 INSERT_QUERY,
                 user.getName(),
-                user.getTimeForMessages(),
+                DATA_FORMATTER_GET_TIME.format(user.getTimeForMessages()),
                 user.getChatId(),
                 (user.getLocation() != null) ? user.getLocation().getId() : null,
                 user.getCurrentProcess()
@@ -61,12 +66,20 @@ public class UserRepository extends BaseRepository<User> {
     }
 
     public void update(User user) throws SQLException {
-        update(UPDATE_QUERY,
-                user.getName(),
-                (user.getTimeForMessages() != null) ? user.getTimeForMessages() : null,
-                (user.getLocation() != null) ? user.getLocation().getId() : null,
-                user.getCurrentProcess(),
-                user.getChatId().toString());
+        if ((user.getLocation() != null) && (user.getLocation().getId() != 0)) {
+            update(UPDATE_QUERY_WITH_LOCATION,
+                    user.getName(),
+                    (user.getTimeForMessages() != null) ? DATA_FORMATTER_GET_TIME.format(user.getTimeForMessages()) : null,
+                    (user.getLocation() != null) ? user.getLocation().getId() : null,
+                    user.getCurrentProcess(),
+                    user.getChatId().toString());
+        } else {
+            update(UPDATE_QUERY_WITHOUT_LOCATION,
+                    user.getName(),
+                    (user.getTimeForMessages() != null) ? DATA_FORMATTER_GET_TIME.format(user.getTimeForMessages()) : null,
+                    user.getCurrentProcess(),
+                    user.getChatId().toString());
+        }
 
     }
 

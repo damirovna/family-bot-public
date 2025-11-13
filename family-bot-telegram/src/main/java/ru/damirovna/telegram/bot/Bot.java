@@ -91,7 +91,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
 
     }
 
-//    TODO add worck with DB
+//    TODO add work with DB
 //    TODO add scheduled actions:
 //      daily messages
 //      daily weatherUpdate
@@ -149,8 +149,10 @@ public final class Bot extends TelegramLongPollingCommandBot {
             userDataMap.put(chatId, userData);
             userManager.updateUser(UserMapper.mapToUser(userData));
             sendMessage(chatId, weather.toString(), MainKeyboard.getMainKeyboard());
-        } catch (IOException | ParseException | SQLException e) {
+        } catch (ParseException e) {
             sendMessage(chatId, WEATHER_ERROR, MainKeyboard.getMainKeyboard());
+        } catch (SQLException | IOException e) {
+            sendMessage(chatId, USER_SAVING_ERROR, MainKeyboard.getMainKeyboard());
         }
     }
 
@@ -162,7 +164,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
             ru.damirovna.telegram.core.model.Location coreLocation = LocationMapper.mapToCoreLocation(newLocation);
             userManager.saveLocation(UserMapper.mapToUser(userData), coreLocation);
             sendMessage(chatId, LOCATION_SAVING_OK + coreLocation.getName(), MainKeyboard.getMainKeyboard());
-        } catch (Exception e) {
+        } catch (SQLException | IOException | ParseException e) {
             sendMessage(chatId, LOCATION_SAVING_ERROR, MainKeyboard.getMainKeyboard());
         }
         userDataMap.put(chatId, userData);
@@ -187,9 +189,12 @@ public final class Bot extends TelegramLongPollingCommandBot {
             userData.setTimeForMessages(newDate);
             userData.setCurrentProcess(BotProcess.WAIT);
             userDataMap.put(chatId, userData);
+            userManager.updateUser(UserMapper.mapToUser(userData));
             sendMessage(chatId, TIME_VALUE_MSG + DATA_FORMATTER_GET_TIME.format(newDate), MainKeyboard.getMainKeyboard());
         } catch (ParseException e) {
             sendMessage(chatId, DO_NOT_UNDERSTAND_MSG, MainKeyboard.getMainKeyboard());
+        } catch (SQLException | IOException e) {
+            sendMessage(chatId, USER_SAVING_ERROR, MainKeyboard.getMainKeyboard());
         }
 
     }
