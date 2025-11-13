@@ -18,7 +18,7 @@ public class WeatherRowMapper implements RowMapper<Weather> {
                 resultSet.getInt("wind_speed"),
                 resultSet.getString("description"),
                 resultSet.getString("date_of_creation"),
-                null
+                resultSet.getString("location_name")
         );
     }
 }

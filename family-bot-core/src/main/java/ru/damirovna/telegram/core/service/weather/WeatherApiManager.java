@@ -16,7 +16,7 @@ public class WeatherApiManager {
 
     private static final String apiToken = System.getenv("WEATHER_API_TOKEN");
 
-    private static final String source = "YANgsgDEX";
+    private static final String source = "YANDEX";
 
     private final WeatherManager weatherManager = new WeatherManager();
 

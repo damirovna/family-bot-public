@@ -4,6 +4,7 @@ import lombok.Data;
 import ru.damirovna.telegram.bot.constants.BotProcess;
 
 import java.util.Date;
+import java.util.concurrent.Future;
 
 @Data
 public class UserData {
@@ -16,6 +17,8 @@ public class UserData {
     private WeatherMessage lastWeatherMessage;
 
     private String name;
+
+    private Future<?> notification;
 
     public UserData() {
         currentProcess = BotProcess.WAIT;

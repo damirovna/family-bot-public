@@ -11,7 +11,13 @@ public class WeatherRepository extends BaseRepository<Weather> {
     private static final String INSERT_QUERY = "INSERT INTO public.weather(\n" +
             "\tdescription, temperature, max_temperature, min_temperature, wind_speed, date_of_creation, location_id, feels_like)\n" +
             "\tVALUES (?, ?, ?, ?, ?, ?, ?, ?) returning location_id";
-    private static final String FIND_BY_LOCATION = "SELECT * FROM weather WHERE location_id = ?";
+    private static final String FIND_BY_LOCATION = "SELECT \n" +
+            "\tw.*, l.location_name \n" +
+            "FROM \n" +
+            "\tweather w\n" +
+            "\tleft outer join locations l\n" +
+            "\t\ton w.location_id =l.id\n" +
+            "WHERE location_id =?";
 
     private static final String UPDATE_QUERY = "UPDATE public.weather\n" +
             "\tSET description=?, temperature=?, max_temperature=?, min_temperature=?, wind_speed=?, date_of_creation=?, feels_like=?\n" +
