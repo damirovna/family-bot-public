@@ -32,6 +32,10 @@ import java.security.GeneralSecurityException;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import static ru.damirovna.telegram.bot.constants.BotCommands.*;
 import static ru.damirovna.telegram.bot.constants.UserMessagesText.*;
@@ -43,6 +47,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
     private static final String botName = System.getenv("BOT_NAME");
     @Getter
     private static final Map<Long, UserData> userDataMap = new HashMap<>();
+    private static final ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
     private final UserManager userManager = new UserManager();
 
     public Bot(String botToken) {
@@ -50,6 +55,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
     }
 
     public static void main(String[] args) {
+        Runtime.getRuntime().addShutdownHook(new Thread(service::shutdown, "Shutdown-thread"));
         try {
             TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
             botsApi.registerBot(new Bot(Bot.botToken));
@@ -91,10 +97,29 @@ public final class Bot extends TelegramLongPollingCommandBot {
 
     }
 
-//    TODO add work with DB
-//    TODO add scheduled actions:
-//      daily messages
-//      daily weatherUpdate
+    public void sendDailyNotifications(Long chatId) {
+        UserData userData = getUserData(chatId);
+        if (userData.getTimeForMessages() == null) {
+            return;
+        }
+        if (userData.getNotification() != null) {
+            userData.getNotification().cancel(false);
+        }
+        Calendar now = Calendar.getInstance();
+        Calendar timeForNotifications = Calendar.getInstance();
+        timeForNotifications.setTime(userData.getTimeForMessages());
+        int hour = timeForNotifications.get(Calendar.HOUR);
+        int minutes = timeForNotifications.get(Calendar.MINUTE);
+        Calendar nextNotificationTime = Calendar.getInstance();
+        nextNotificationTime.set(Calendar.HOUR, hour);
+        nextNotificationTime.set(Calendar.MINUTE, minutes);
+        if (nextNotificationTime.before(now)) {
+            nextNotificationTime.add(Calendar.DATE, 1);
+        }
+        ScheduledFuture<?> future = service.scheduleWithFixedDelay(new SendNotificationsTask(chatId), (nextNotificationTime.getTimeInMillis() - now.getTimeInMillis()), 86400000L, TimeUnit.MILLISECONDS);
+        userData.setNotification(future);
+        userDataMap.put(chatId, userData);
+    }
 
     private void setTime(Long chatId) {
         UserData userData = getUserData(chatId);
@@ -106,7 +131,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
         } else {
             userData.setCurrentProcess(BotProcess.SET_TIME);
             userDataMap.put(chatId, userData);
-            sendMessage(chatId, ENTER_TIME_MSG, null);
+            sendMessage(chatId, ENTER_TIME_MSG, MainKeyboard.getMainKeyboard());
         }
 //        try {
 //            userRepository.update(userData);
@@ -191,6 +216,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
             userDataMap.put(chatId, userData);
             userManager.updateUser(UserMapper.mapToUser(userData));
             sendMessage(chatId, TIME_VALUE_MSG + DATA_FORMATTER_GET_TIME.format(newDate), MainKeyboard.getMainKeyboard());
+            sendDailyNotifications(chatId);
         } catch (ParseException e) {
             sendMessage(chatId, DO_NOT_UNDERSTAND_MSG, MainKeyboard.getMainKeyboard());
         } catch (SQLException | IOException e) {
@@ -205,7 +231,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
         if (BotProcess.VERIFY_TIME.equals(currentProcess) && answer) {
             userData.setCurrentProcess(BotProcess.SET_TIME);
             userDataMap.put(chatId, userData);
-            sendMessage(chatId, ENTER_TIME_MSG, null);
+            sendMessage(chatId, ENTER_TIME_MSG, MainKeyboard.getMainKeyboard());
         }
         if (userData.getTimeForMessages() != null && !answer) {
             sendMessage(chatId, TIME_VALUE_MSG + DATA_FORMATTER_GET_TIME.format(userData.getTimeForMessages()), MainKeyboard.getMainKeyboard());
@@ -251,5 +277,20 @@ public final class Bot extends TelegramLongPollingCommandBot {
     @Override
     public String getBotUsername() {
         return botName;
+    }
+
+    public class SendNotificationsTask implements Runnable {
+
+        private Long chatId;
+
+        public SendNotificationsTask(Long chatId) {
+            this.chatId = chatId;
+        }
+
+        @Override
+        public void run() {
+            getWeather(chatId);
+            getEvents(chatId);
+        }
     }
 }
