@@ -82,10 +82,12 @@ public class GoogleCalendarManager {
         if (calendar == null) {
             getCalendar();
         }
-        EventDateTime start = new EventDateTime().setDate(new DateTime(event.getStart().getTime()));
-        start.setTimeZone(event.getStart().getTimeZone().getDisplayName());
-        EventDateTime end = new EventDateTime().setDate(new DateTime(event.getEnd().getTime()));
-        end.setTimeZone(event.getEnd().getTimeZone().getDisplayName());
+        EventDateTime start = new EventDateTime();
+        DateTime dateTime = new DateTime(event.getStart().getTimeInMillis());
+        start.setDateTime(dateTime);
+        start.setTimeZone("Asia/Yekaterinburg");
+        EventDateTime end = new EventDateTime().setDateTime(new DateTime(event.getEnd().getTime()));
+        end.setTimeZone("Asia/Yekaterinburg");
 
         Event googleEvent = new Event()
                 .setSummary(event.getSummary())
