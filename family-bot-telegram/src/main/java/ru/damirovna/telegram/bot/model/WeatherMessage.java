@@ -4,7 +4,7 @@ import lombok.Data;
 
 import java.util.Date;
 
-import static ru.damirovna.telegram.common.Constants.DATA_FORMATTER_GET_DAY;
+import static ru.damirovna.telegram.common.Constants.DATE_FORMATTER_GET_DAY;
 
 @Data
 public class WeatherMessage {
@@ -36,7 +36,7 @@ public class WeatherMessage {
         if ((date == null) || (date.isEmpty())) {
             return false;
         }
-        return DATA_FORMATTER_GET_DAY.format(new Date()).equals(date);
+        return DATE_FORMATTER_GET_DAY.format(new Date()).equals(date);
     }
 
     @Override

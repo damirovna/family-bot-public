@@ -10,7 +10,7 @@ import java.util.concurrent.Future;
 public class UserData {
     private Long chatId;
     private Date timeForMessages;
-    private Location location;
+    private LocationBot location;
 
     private BotProcess currentProcess;
 
@@ -19,6 +19,8 @@ public class UserData {
     private String name;
 
     private Future<?> notification;
+
+    private EventBot newEvent;
 
     public UserData() {
         currentProcess = BotProcess.WAIT;

@@ -10,7 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
 
-import static ru.damirovna.telegram.common.Constants.DATA_FORMATTER_GET_TIME;
+import static ru.damirovna.telegram.common.Constants.DATE_FORMATTER_GET_TIME;
 
 @Component
 public class UserRowMapper implements RowMapper<User> {
@@ -21,7 +21,7 @@ public class UserRowMapper implements RowMapper<User> {
         user.setChatId(Long.valueOf(resultSet.getString("chat_id")));
         try {
             if (resultSet.getString("date_notification") != null) {
-                user.setTimeForMessages(DATA_FORMATTER_GET_TIME.parse(resultSet.getString("date_notification")));
+                user.setTimeForMessages(DATE_FORMATTER_GET_TIME.parse(resultSet.getString("date_notification")));
             }
         } catch (ParseException e) {
             throw new RuntimeException(e);

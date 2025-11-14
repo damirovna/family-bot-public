@@ -14,6 +14,7 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.Event;
+import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 
 import java.io.*;
@@ -74,6 +75,25 @@ public class GoogleCalendarManager {
                 .setSingleEvents(true)
                 .execute();
         return events.getItems();
+    }
+
+    //TODO create new Event on bot
+    public String addEventToGoogleCalendar(ru.damirovna.telegram.core.model.Event event) throws IOException, GeneralSecurityException {
+        if (calendar == null) {
+            getCalendar();
+        }
+        EventDateTime start = new EventDateTime().setDate(new DateTime(event.getStart().getTime()));
+        start.setTimeZone(event.getStart().getTimeZone().getDisplayName());
+        EventDateTime end = new EventDateTime().setDate(new DateTime(event.getEnd().getTime()));
+        end.setTimeZone(event.getEnd().getTimeZone().getDisplayName());
+
+        Event googleEvent = new Event()
+                .setSummary(event.getSummary())
+                .setLocation(event.getLocation())
+                .setStart(start)
+                .setEnd(end);
+        Event newGoogleEvent = calendar.events().insert(CALENDAR_ID, googleEvent).execute();
+        return newGoogleEvent.getId();
     }
 
     public void getCalendar() throws GeneralSecurityException, IOException {

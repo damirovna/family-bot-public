@@ -7,14 +7,14 @@ import ru.damirovna.telegram.core.model.Event;
 import java.util.Calendar;
 import java.util.List;
 
-import static ru.damirovna.telegram.common.Constants.DATA_FORMATTER_GET_DAY;
-import static ru.damirovna.telegram.common.Constants.DATA_FORMATTER_GET_TIME;
+import static ru.damirovna.telegram.common.Constants.DATE_FORMATTER_GET_DAY;
+import static ru.damirovna.telegram.common.Constants.DATE_FORMATTER_GET_TIME;
 
 
-public class EventMessage {
+public class EventsMessage {
     private final List<Event> events;
 
-    public EventMessage(List<Event> events) {
+    public EventsMessage(List<Event> events) {
         this.events = events;
     }
 
@@ -42,11 +42,11 @@ public class EventMessage {
             sb.append("\n");
             if ((e.getEnd().get(Calendar.DAY_OF_MONTH) - e.getStart().get(Calendar.DAY_OF_MONTH)) > 0) {
                 sb.append("Весь день: ");
-                sb.append(DATA_FORMATTER_GET_DAY.format(e.getStart().getTime()));
+                sb.append(DATE_FORMATTER_GET_DAY.format(e.getStart().getTime()));
             } else {
-                sb.append(DATA_FORMATTER_GET_TIME.format(e.getStart().getTime()));
+                sb.append(DATE_FORMATTER_GET_TIME.format(e.getStart().getTime()));
                 sb.append(" - ");
-                sb.append(DATA_FORMATTER_GET_TIME.format(e.getEnd().getTime()));
+                sb.append(DATE_FORMATTER_GET_TIME.format(e.getEnd().getTime()));
             }
             sb.append("\n");
             if (e.getLocation() != null) {

@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-import static ru.damirovna.telegram.common.Constants.DATA_FORMATTER_GET_TIME;
+import static ru.damirovna.telegram.common.Constants.DATE_FORMATTER_GET_TIME;
 
 
 @Repository
@@ -56,7 +56,7 @@ public class UserRepository extends BaseRepository<User> {
         int id = insert(
                 INSERT_QUERY,
                 user.getName(),
-                DATA_FORMATTER_GET_TIME.format(user.getTimeForMessages()),
+                DATE_FORMATTER_GET_TIME.format(user.getTimeForMessages()),
                 user.getChatId(),
                 (user.getLocation() != null) ? user.getLocation().getId() : null,
                 user.getCurrentProcess()
@@ -69,14 +69,14 @@ public class UserRepository extends BaseRepository<User> {
         if ((user.getLocation() != null) && (user.getLocation().getId() != 0)) {
             update(UPDATE_QUERY_WITH_LOCATION,
                     user.getName(),
-                    (user.getTimeForMessages() != null) ? DATA_FORMATTER_GET_TIME.format(user.getTimeForMessages()) : null,
+                    (user.getTimeForMessages() != null) ? DATE_FORMATTER_GET_TIME.format(user.getTimeForMessages()) : null,
                     (user.getLocation() != null) ? user.getLocation().getId() : null,
                     user.getCurrentProcess(),
                     user.getChatId().toString());
         } else {
             update(UPDATE_QUERY_WITHOUT_LOCATION,
                     user.getName(),
-                    (user.getTimeForMessages() != null) ? DATA_FORMATTER_GET_TIME.format(user.getTimeForMessages()) : null,
+                    (user.getTimeForMessages() != null) ? DATE_FORMATTER_GET_TIME.format(user.getTimeForMessages()) : null,
                     user.getCurrentProcess(),
                     user.getChatId().toString());
         }

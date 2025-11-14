@@ -4,13 +4,13 @@ import lombok.Data;
 
 
 @Data
-public class Location {
+public class LocationBot {
 
     private int id;
     private double longitude;
     private double latitude;
 
-    public Location(double longitude, double latitude) {
+    public LocationBot(double longitude, double latitude) {
         this.longitude = longitude;
         this.latitude = latitude;
     }

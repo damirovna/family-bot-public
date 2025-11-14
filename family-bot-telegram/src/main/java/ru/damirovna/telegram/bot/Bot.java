@@ -12,14 +12,14 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 import ru.damirovna.telegram.bot.constants.BotProcess;
+import ru.damirovna.telegram.bot.keyboards.EditEventKeyboard;
 import ru.damirovna.telegram.bot.keyboards.MainKeyboard;
 import ru.damirovna.telegram.bot.keyboards.VerifyKeyboard;
+import ru.damirovna.telegram.bot.mapper.EventMapper;
 import ru.damirovna.telegram.bot.mapper.LocationMapper;
 import ru.damirovna.telegram.bot.mapper.UserMapper;
 import ru.damirovna.telegram.bot.mapper.WeatherMapper;
-import ru.damirovna.telegram.bot.model.EventMessage;
-import ru.damirovna.telegram.bot.model.UserData;
-import ru.damirovna.telegram.bot.model.WeatherMessage;
+import ru.damirovna.telegram.bot.model.*;
 import ru.damirovna.telegram.core.model.Event;
 import ru.damirovna.telegram.core.model.User;
 import ru.damirovna.telegram.core.model.Weather;
@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.sql.SQLException;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -39,7 +40,8 @@ import java.util.concurrent.TimeUnit;
 
 import static ru.damirovna.telegram.bot.constants.BotCommands.*;
 import static ru.damirovna.telegram.bot.constants.UserMessagesText.*;
-import static ru.damirovna.telegram.common.Constants.DATA_FORMATTER_GET_TIME;
+import static ru.damirovna.telegram.common.Constants.DATE_FORMATTER_FULL_DATE;
+import static ru.damirovna.telegram.common.Constants.DATE_FORMATTER_GET_TIME;
 
 public final class Bot extends TelegramLongPollingCommandBot {
 
@@ -49,6 +51,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
     private static final Map<Long, UserData> userDataMap = new HashMap<>();
     private static final ScheduledExecutorService service = Executors.newSingleThreadScheduledExecutor();
     private final UserManager userManager = new UserManager();
+    private final EventManager eventManager = new EventManager();
 
     public Bot(String botToken) {
         super(botToken);
@@ -76,25 +79,124 @@ public final class Bot extends TelegramLongPollingCommandBot {
         if (!(chatId.equals(278706331L) || chatId.equals(43681888L))) {
             return;
         }
-        if (userDataMap.containsKey(chatId) && BotProcess.SET_TIME.equals(userDataMap.get(chatId).getCurrentProcess())) {
-            setTime(chatId, messageText);
-            return;
+        switch (userData.getCurrentProcess()) {
+            case SET_TIME -> {
+                setTime(userData, messageText);
+                return;
+            }
+            case SET_EVENT_SUMMARY -> {
+                fillEventSummary(userData, messageText);
+                return;
+            }
+            case SET_EVENT_START_TIME -> {
+                fillEventStart(userData, messageText);
+                return;
+            }
+            case SET_EVENT_END_TIME -> {
+                fillEventEnd(userData, messageText);
+                return;
+            }
+            case SET_EVENT_LOCATION -> {
+                fillEventLocation(userData, messageText);
+                return;
+            }
         }
         if (message.hasLocation()) {
-            saveLocation(chatId, message.getLocation());
+            saveLocation(userData, message.getLocation());
             return;
         }
 //        TODO add event creation
         switch (messageText) {
-            case START -> start(chatId);
-            case SET_TIME -> setTime(chatId);
-            case YES -> verify(chatId, true);
-            case NO -> verify(chatId, false);
-            case GET_WEATHER -> getWeather(chatId);
+            case START -> start(userData);
+            case SET_TIME -> setTime(userData);
+            case YES -> verify(userData, true);
+            case NO -> verify(userData, false);
+            case GET_WEATHER -> getWeather(userData);
             case GET_EVENTS -> getEvents(chatId);
+            case ADD_NEW_EVENT -> createNewEvent(userData);
+            case EDIT_EVENT_SUMMARY -> setEventBotProcess(userData, BotProcess.SET_EVENT_SUMMARY);
+            case EDIT_EVENT_START -> userData.setCurrentProcess(BotProcess.SET_EVENT_START_TIME);
+            case EDIT_EVENT_END -> userData.setCurrentProcess(BotProcess.SET_EVENT_END_TIME);
+            case EDIT_EVENT_LOCATION -> userData.setCurrentProcess(BotProcess.SET_EVENT_LOCATION);
+            case EDIT_EVENT_IN_GOOGLE_CALENDAR -> userData.setCurrentProcess(BotProcess.SET_GOOGLE_CALENDAR_SAVING);
             default -> sendMessage(chatId, DO_NOT_UNDERSTAND_MSG, MainKeyboard.getMainKeyboard());
         }
 
+    }
+
+    private void setEventBotProcess(UserData userData, BotProcess botProcess) {
+        userData.setCurrentProcess(botProcess);
+        switch (botProcess) {
+            case SET_EVENT_SUMMARY -> sendMessage(userData.getChatId(), ENTER_EVENT_SUMMARY_MSG, null);
+            case SET_EVENT_START_TIME -> sendMessage(userData.getChatId(), ENTER_EVENT_START, null);
+            case SET_EVENT_END_TIME -> sendMessage(userData.getChatId(), ENTER_EVENT_END, null);
+            case SET_EVENT_LOCATION -> sendMessage(userData.getChatId(), ENTER_EVENT_LOCATION, null);
+            case SET_GOOGLE_CALENDAR_SAVING ->
+                    sendMessage(userData.getChatId(), ENTER_GOOGLE_CALENDAR_SAVING, VerifyKeyboard.getKeyboard());
+            case VERIFY_EVENT_CREATION ->
+                    sendMessage(userData.getChatId(), DO_YOU_WANT_CREATE_EVENT_MSG + userData.getNewEvent().toString(), VerifyKeyboard.getKeyboard());
+        }
+    }
+
+    private void fillEventLocation(UserData userData, String messageText) {
+        userData.getNewEvent().setLocation(messageText);
+        if (userData.getNewEvent().getIsInGoogleCalendar() == null) {
+            setEventBotProcess(userData, BotProcess.SET_GOOGLE_CALENDAR_SAVING);
+        } else {
+            setEventBotProcess(userData, BotProcess.VERIFY_EVENT_CREATION);
+        }
+    }
+
+    //TODO можно вводить только время окончания события
+    private void fillEventEnd(UserData userData, String messageText) {
+        try {
+            Calendar end = (Calendar) userData.getNewEvent().getStart().clone();
+            Date newDate = checkDate(messageText, DATE_FORMATTER_GET_TIME);
+            end.set(Calendar.HOUR, newDate.getHours());
+            end.set(Calendar.MINUTE, newDate.getMinutes());
+            if (end.before(userData.getNewEvent().getStart())) {
+                end.add(Calendar.DATE, 1);
+            }
+            userData.getNewEvent().setEnd(end);
+            if (userData.getNewEvent().getLocation() == null) {
+                setEventBotProcess(userData, BotProcess.SET_EVENT_LOCATION);
+            } else {
+                setEventBotProcess(userData, BotProcess.VERIFY_EVENT_CREATION);
+            }
+        } catch (ParseException e) {
+            sendMessage(userData.getChatId(), DATE_PARSE_ERROR, null);
+        }
+    }
+
+    private void fillEventStart(UserData userData, String messageText) {
+        try {
+            Calendar start = Calendar.getInstance();
+            start.setTime(checkDate(messageText, DATE_FORMATTER_FULL_DATE));
+            userData.getNewEvent().setStart(start);
+            if (userData.getNewEvent().getEnd() == null) {
+                setEventBotProcess(userData, BotProcess.SET_EVENT_END_TIME);
+            } else {
+                setEventBotProcess(userData, BotProcess.VERIFY_EVENT_CREATION);
+            }
+
+        } catch (ParseException e) {
+            sendMessage(userData.getChatId(), DATE_PARSE_ERROR, null);
+        }
+    }
+
+    private void fillEventSummary(UserData userData, String messageText) {
+        userData.getNewEvent().setSummary(messageText);
+        if (userData.getNewEvent().getStart() == null) {
+            setEventBotProcess(userData, BotProcess.SET_EVENT_START_TIME);
+        } else {
+            setEventBotProcess(userData, BotProcess.VERIFY_EVENT_CREATION);
+        }
+
+    }
+
+    private void createNewEvent(UserData userData) {
+        userData.setNewEvent(new EventBot());
+        setEventBotProcess(userData, BotProcess.SET_EVENT_SUMMARY);
     }
 
     public void sendDailyNotifications(Long chatId) {
@@ -121,10 +223,10 @@ public final class Bot extends TelegramLongPollingCommandBot {
         userDataMap.put(chatId, userData);
     }
 
-    private void setTime(Long chatId) {
-        UserData userData = getUserData(chatId);
+    private void setTime(UserData userData) {
+        Long chatId = userData.getChatId();
         if (userData.getTimeForMessages() != null) {
-            sendMessage(chatId, TIME_VALUE_MSG + DATA_FORMATTER_GET_TIME.format(userData.getTimeForMessages()), MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, TIME_VALUE_MSG + DATE_FORMATTER_GET_TIME.format(userData.getTimeForMessages()), MainKeyboard.getMainKeyboard());
             sendMessage(chatId, DO_YOU_WANT_CHANGE_TIME_MSG, VerifyKeyboard.getKeyboard());
             userData.setCurrentProcess(BotProcess.VERIFY_TIME);
             userDataMap.put(chatId, userData);
@@ -144,17 +246,19 @@ public final class Bot extends TelegramLongPollingCommandBot {
         EventManager manager = new EventManager();
         try {
             List<Event> eventList = manager.getEvents(7);
-            EventMessage message = new EventMessage(eventList);
+            EventsMessage message = new EventsMessage(eventList);
             sendMessage(chatId, message.getMessageForWeek(), MainKeyboard.getMainKeyboard());
         } catch (IOException e) {
-            sendMessage(chatId, "Ошибка размещения ключа клиента", MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, USER_KEY_ERROR, MainKeyboard.getMainKeyboard());
         } catch (GeneralSecurityException e) {
-            sendMessage(chatId, "Ошибка авторизации в гугл", MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, GOOGLE_AUTH_ERROR, MainKeyboard.getMainKeyboard());
+        } catch (SQLException e) {
+            sendMessage(chatId, EVENT_SAVING_ERROR, MainKeyboard.getMainKeyboard());
         }
     }
 
-    private void getWeather(Long chatId) {
-        UserData userData = getUserData(chatId);
+    private void getWeather(UserData userData) {
+        Long chatId = userData.getChatId();
         if (userData.getLocation() == null) {
             sendMessage(chatId, LOCATION_IS_EMPTY, MainKeyboard.getMainKeyboard());
             return;
@@ -166,7 +270,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
                     return;
                 }
             }
-            ru.damirovna.telegram.bot.model.Location location = userData.getLocation();
+            LocationBot location = userData.getLocation();
             WeatherApiManager weatherApiManager = new WeatherApiManager();
             Weather coreWeather = weatherApiManager.getWeather(location.getLongitude(), location.getLatitude());
             WeatherMessage weather = WeatherMapper.mapToWeatherMessage(coreWeather);
@@ -181,9 +285,9 @@ public final class Bot extends TelegramLongPollingCommandBot {
         }
     }
 
-    private void saveLocation(Long chatId, Location location) {
-        UserData userData = getUserData(chatId);
-        ru.damirovna.telegram.bot.model.Location newLocation = new ru.damirovna.telegram.bot.model.Location(location.getLongitude(), location.getLatitude());
+    private void saveLocation(UserData userData, Location location) {
+        Long chatId = userData.getChatId();
+        LocationBot newLocation = new LocationBot(location.getLongitude(), location.getLatitude());
         userData.setLocation(newLocation);
         try {
             ru.damirovna.telegram.core.model.Location coreLocation = LocationMapper.mapToCoreLocation(newLocation);
@@ -196,47 +300,70 @@ public final class Bot extends TelegramLongPollingCommandBot {
 
     }
 
-    private Date checkDate(String s) throws ParseException {
+    private Date checkDate(String s, SimpleDateFormat format) throws ParseException {
         s = (s.indexOf(':') == 2) ? s : "0" + s;
-        Date newDate = DATA_FORMATTER_GET_TIME.parse(s);
-        if (DATA_FORMATTER_GET_TIME.format(newDate).equals(s)) {
+        Date newDate = format.parse(s);
+        if (format.format(newDate).equals(s)) {
             return newDate;
         } else {
-            throw new ParseException(s + "is bad String for pattern " + DATA_FORMATTER_GET_TIME.toPattern(), 0);
+            throw new ParseException(s + "is bad String for pattern " + format.toPattern(), 0);
         }
     }
 
-    private void setTime(Long chatId, String time) {
-
-        UserData userData = getUserData(chatId);
+    private void setTime(UserData userData, String time) {
+        Long chatId = userData.getChatId();
         try {
-            Date newDate = checkDate(time);
+            Date newDate = checkDate(time, DATE_FORMATTER_GET_TIME);
             userData.setTimeForMessages(newDate);
             userData.setCurrentProcess(BotProcess.WAIT);
             userDataMap.put(chatId, userData);
             userManager.updateUser(UserMapper.mapToUser(userData));
-            sendMessage(chatId, TIME_VALUE_MSG + DATA_FORMATTER_GET_TIME.format(newDate), MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, TIME_VALUE_MSG + DATE_FORMATTER_GET_TIME.format(newDate), MainKeyboard.getMainKeyboard());
             sendDailyNotifications(chatId);
         } catch (ParseException e) {
-            sendMessage(chatId, DO_NOT_UNDERSTAND_MSG, MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, DATE_PARSE_ERROR, null);
         } catch (SQLException | IOException e) {
             sendMessage(chatId, USER_SAVING_ERROR, MainKeyboard.getMainKeyboard());
         }
 
     }
 
-    private void verify(Long chatId, boolean answer) {
-        UserData userData = userDataMap.get(chatId);
+    private void verify(UserData userData, boolean answer) {
+        Long chatId = userData.getChatId();
         BotProcess currentProcess = userData.getCurrentProcess();
         if (BotProcess.VERIFY_TIME.equals(currentProcess) && answer) {
             userData.setCurrentProcess(BotProcess.SET_TIME);
             userDataMap.put(chatId, userData);
             sendMessage(chatId, ENTER_TIME_MSG, MainKeyboard.getMainKeyboard());
+            return;
         }
-        if (userData.getTimeForMessages() != null && !answer) {
-            sendMessage(chatId, TIME_VALUE_MSG + DATA_FORMATTER_GET_TIME.format(userData.getTimeForMessages()), MainKeyboard.getMainKeyboard());
+        if (BotProcess.VERIFY_TIME.equals(currentProcess) && (userData.getTimeForMessages() != null && !answer)) {
+            sendMessage(chatId, TIME_VALUE_MSG + DATE_FORMATTER_GET_TIME.format(userData.getTimeForMessages()), MainKeyboard.getMainKeyboard());
+            return;
         }
+        if (BotProcess.SET_GOOGLE_CALENDAR_SAVING.equals(currentProcess)) {
+            userData.getNewEvent().setIsInGoogleCalendar(answer);
+            setEventBotProcess(userData, BotProcess.VERIFY_EVENT_CREATION);
+            return;
+        }
+        if (BotProcess.VERIFY_EVENT_CREATION.equals(currentProcess)) {
+            if (answer) {
+                try {
+                    eventManager.saveEvent(EventMapper.mapToEvent(userData.getNewEvent()), userData.getNewEvent().getIsInGoogleCalendar());
+                    userData.setNewEvent(null);
+                    sendMessage(userData.getChatId(), EVENT_SAVING_SUCCESS, MainKeyboard.getMainKeyboard());
+                } catch (SQLException | IOException | GeneralSecurityException e) {
+                    sendMessage(userData.getChatId(), EVENT_SAVING_ERROR, MainKeyboard.getMainKeyboard());
+                }
+            } else {
+                editNewEvent(userData);
+            }
+        }
+    }
 
+    private void editNewEvent(UserData userData) {
+        userData.setCurrentProcess(BotProcess.EDIT_NEW_EVENT);
+        sendMessage(userData.getChatId(), EDIT_NEW_EVENT, EditEventKeyboard.getKeyboard());
     }
 
     private UserData getUserData(Long chatId) {
@@ -256,9 +383,8 @@ public final class Bot extends TelegramLongPollingCommandBot {
         return userData;
     }
 
-    private void start(Long chatId) {
-        getUserData(chatId);
-        sendMessage(chatId, HELLO_MSG, MainKeyboard.getMainKeyboard());
+    private void start(UserData userData) {
+        sendMessage(userData.getChatId(), HELLO_MSG, MainKeyboard.getMainKeyboard());
     }
 
     public void sendMessage(Long chatId, String message, ReplyKeyboardMarkup keyboard) {
@@ -281,7 +407,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
 
     public class SendNotificationsTask implements Runnable {
 
-        private Long chatId;
+        private final Long chatId;
 
         public SendNotificationsTask(Long chatId) {
             this.chatId = chatId;
@@ -289,7 +415,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
 
         @Override
         public void run() {
-            getWeather(chatId);
+            getWeather(userDataMap.get(chatId));
             getEvents(chatId);
         }
     }

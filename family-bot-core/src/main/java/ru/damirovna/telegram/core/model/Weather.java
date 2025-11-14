@@ -4,7 +4,7 @@ import lombok.Data;
 
 import java.util.Date;
 
-import static ru.damirovna.telegram.common.Constants.DATA_FORMATTER_GET_DAY;
+import static ru.damirovna.telegram.common.Constants.DATE_FORMATTER_GET_DAY;
 
 @Data
 public class Weather {
@@ -26,7 +26,7 @@ public class Weather {
         this.tempMin = Math.round(tempMin - 273.15);
         this.tempMax = Math.round(tempMax - 273.15);
         this.windSpeed = windSpeed;
-        this.date = DATA_FORMATTER_GET_DAY.format(new Date());
+        this.date = DATE_FORMATTER_GET_DAY.format(new Date());
         this.description = description;
         this.locationName = locationName;
     }
@@ -37,7 +37,7 @@ public class Weather {
         this.tempMin = tempMin;
         this.tempMax = tempMax;
         this.windSpeed = (int) Math.round(windSpeed);
-        this.date = DATA_FORMATTER_GET_DAY.format(new Date());
+        this.date = DATE_FORMATTER_GET_DAY.format(new Date());
         this.description = description;
         this.locationName = locationName;
     }
@@ -48,7 +48,7 @@ public class Weather {
         this.tempMin = minTemperature;
         this.tempMax = maxTemperature;
         this.windSpeed = windSpeed;
-        this.date = DATA_FORMATTER_GET_DAY.format(dateOfCreation);
+        this.date = DATE_FORMATTER_GET_DAY.format(dateOfCreation);
         this.description = description;
         this.locationName = locationName;
     }
@@ -69,7 +69,7 @@ public class Weather {
         if ((date == null) || (date.isEmpty())) {
             return false;
         }
-        return DATA_FORMATTER_GET_DAY.format(new Date()).equals(date);
+        return DATE_FORMATTER_GET_DAY.format(new Date()).equals(date);
     }
 
 }

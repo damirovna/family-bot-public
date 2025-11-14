@@ -52,8 +52,7 @@ public class BaseRepository<T> {
             }
             return ps;
         }, keyHolder);
-
-        Integer id = keyHolder.getKeyAs(Integer.class);
+        Integer id = (Integer) keyHolder.getKeys().get("id");
 
 
         if (id != null) {
