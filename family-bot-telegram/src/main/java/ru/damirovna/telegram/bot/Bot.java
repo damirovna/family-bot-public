@@ -133,7 +133,8 @@ public final class Bot extends TelegramLongPollingCommandBot {
             case EDIT_EVENT_END -> setEventBotProcess(userData, BotProcess.SET_EVENT_END_TIME);
             case EDIT_EVENT_LOCATION -> setEventBotProcess(userData, BotProcess.SET_EVENT_LOCATION);
             case EDIT_EVENT_IN_GOOGLE_CALENDAR -> setEventBotProcess(userData, BotProcess.SET_GOOGLE_CALENDAR_SAVING);
-            default -> sendMessage(chatId, DO_NOT_UNDERSTAND_MSG, MainKeyboard.getMainKeyboard());
+            case CANCEL_NEW_EVENT_CREATION -> setEventBotProcess(userData, BotProcess.WAIT);
+            default -> sendMessage(chatId, DO_NOT_UNDERSTAND_MSG, MainKeyboard.getKeyboard());
         }
 
     }
@@ -154,6 +155,10 @@ public final class Bot extends TelegramLongPollingCommandBot {
             case VERIFY_EVENT_CREATION -> {
                 sendMessage(userData.getChatId(), DO_YOU_WANT_CREATE_EVENT_MSG + userData.getNewEvent().toString(), VerifyKeyboard.getKeyboard());
                 log.debug("Create new Event :\n" + userData.getNewEvent().toString());
+            }
+            case WAIT -> {
+                userData.setNewEvent(null);
+                sendMessage(userData.getChatId(), NEW_EVENT_CREATION_IS_CANCELLED, MainKeyboard.getKeyboard());
             }
         }
     }
@@ -293,14 +298,14 @@ public final class Bot extends TelegramLongPollingCommandBot {
     private void setTime(UserData userData) {
         Long chatId = userData.getChatId();
         if (userData.getTimeForMessages() != null) {
-            sendMessage(chatId, TIME_VALUE_MSG + DATE_FORMATTER_GET_TIME.format(userData.getTimeForMessages()), MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, TIME_VALUE_MSG + DATE_FORMATTER_GET_TIME.format(userData.getTimeForMessages()), MainKeyboard.getKeyboard());
             sendMessage(chatId, DO_YOU_WANT_CHANGE_TIME_MSG, VerifyKeyboard.getKeyboard());
             userData.setCurrentProcess(BotProcess.VERIFY_TIME);
             userDataMap.put(chatId, userData);
         } else {
             userData.setCurrentProcess(BotProcess.SET_TIME);
             userDataMap.put(chatId, userData);
-            sendMessage(chatId, ENTER_TIME_MSG, MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, ENTER_TIME_MSG, MainKeyboard.getKeyboard());
         }
 
     }
@@ -310,16 +315,16 @@ public final class Bot extends TelegramLongPollingCommandBot {
         try {
             List<Event> eventList = manager.getEvents(daysCount);
             EventsMessage message = new EventsMessage(eventList);
-            sendMessage(chatId, message.getMessageForWeek(), MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, message.getMessageForWeek(), MainKeyboard.getKeyboard());
             log.info("Get events, events count: {}", eventList.size());
         } catch (IOException e) {
-            sendMessage(chatId, USER_KEY_ERROR, MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, USER_KEY_ERROR, MainKeyboard.getKeyboard());
             log.error("User key error", e);
         } catch (GeneralSecurityException e) {
-            sendMessage(chatId, GOOGLE_AUTH_ERROR, MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, GOOGLE_AUTH_ERROR, MainKeyboard.getKeyboard());
             log.error("Google auth error", e);
         } catch (SQLException e) {
-            sendMessage(chatId, EVENT_SAVING_ERROR, MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, EVENT_SAVING_ERROR, MainKeyboard.getKeyboard());
             log.error("Events saving error", e);
         }
     }
@@ -327,13 +332,13 @@ public final class Bot extends TelegramLongPollingCommandBot {
     private void getWeather(UserData userData) {
         Long chatId = userData.getChatId();
         if (userData.getLocation() == null) {
-            sendMessage(chatId, LOCATION_IS_EMPTY, MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, LOCATION_IS_EMPTY, MainKeyboard.getKeyboard());
             return;
         }
         try {
             if (userData.getLastWeatherMessage() != null) {
                 if (userData.getLastWeatherMessage().isActual()) {
-                    sendMessage(chatId, userData.getLastWeatherMessage().toString(), MainKeyboard.getMainKeyboard());
+                    sendMessage(chatId, userData.getLastWeatherMessage().toString(), MainKeyboard.getKeyboard());
                     log.info("Send weather for {} from saving data", userData.getName());
                     return;
                 }
@@ -345,16 +350,16 @@ public final class Bot extends TelegramLongPollingCommandBot {
             userData.setLastWeatherMessage(weather);
             userDataMap.put(chatId, userData);
             userManager.updateUser(UserMapper.mapToUser(userData));
-            sendMessage(chatId, weather.toString(), MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, weather.toString(), MainKeyboard.getKeyboard());
             log.info("Send weather for {} from api", userData.getName());
         } catch (ParseException e) {
-            sendMessage(chatId, WEATHER_ERROR, MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, WEATHER_ERROR, MainKeyboard.getKeyboard());
             log.warn("Weather incorrect date", e);
         } catch (SQLException e) {
-            sendMessage(chatId, USER_SAVING_ERROR, MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, USER_SAVING_ERROR, MainKeyboard.getKeyboard());
             log.warn("Saving error", e);
         } catch (IOException e) {
-            sendMessage(chatId, USER_SAVING_ERROR, MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, USER_SAVING_ERROR, MainKeyboard.getKeyboard());
             log.warn("Can't get location name from yandex map service", e);
         }
     }
@@ -366,10 +371,10 @@ public final class Bot extends TelegramLongPollingCommandBot {
         try {
             ru.damirovna.telegram.core.model.Location coreLocation = LocationMapper.mapToCoreLocation(newLocation);
             userManager.saveLocation(UserMapper.mapToUser(userData), coreLocation);
-            sendMessage(chatId, LOCATION_SAVING_OK + coreLocation.getName(), MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, LOCATION_SAVING_OK + coreLocation.getName(), MainKeyboard.getKeyboard());
             log.info("Save new location: {} for user {}", coreLocation.getName(), userData.getName());
         } catch (SQLException | IOException | ParseException e) {
-            sendMessage(chatId, LOCATION_SAVING_ERROR, MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, LOCATION_SAVING_ERROR, MainKeyboard.getKeyboard());
             log.warn("New Location saving error", e);
         }
         userDataMap.put(chatId, userData);
@@ -384,7 +389,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
         if (format.format(newDate).equals(s)) {
             return newDate;
         } else {
-            throw new ParseException(s + "is bad String for pattern " + format.toPattern(), 0);
+            throw new ParseException(s + " is bad String for pattern " + format.toPattern(), 0);
         }
     }
 
@@ -396,7 +401,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
             userData.setCurrentProcess(BotProcess.WAIT);
             userDataMap.put(chatId, userData);
             userManager.updateUser(UserMapper.mapToUser(userData));
-            sendMessage(chatId, TIME_VALUE_MSG + DATE_FORMATTER_GET_TIME.format(newDate), MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, TIME_VALUE_MSG + DATE_FORMATTER_GET_TIME.format(newDate), MainKeyboard.getKeyboard());
             sendDailyNotifications(userData);
             log.info("Set new notification time: " + time + " for user " + userData.getName());
         } catch (ParseException e) {
@@ -404,7 +409,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
             log.warn("Invalid notifications time", e);
 
         } catch (SQLException | IOException e) {
-            sendMessage(chatId, USER_SAVING_ERROR, MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, USER_SAVING_ERROR, MainKeyboard.getKeyboard());
             log.warn("User saving error", e);
         }
 
@@ -416,11 +421,11 @@ public final class Bot extends TelegramLongPollingCommandBot {
         if (BotProcess.VERIFY_TIME.equals(currentProcess) && answer) {
             userData.setCurrentProcess(BotProcess.SET_TIME);
             userDataMap.put(chatId, userData);
-            sendMessage(chatId, ENTER_TIME_MSG, MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, ENTER_TIME_MSG, MainKeyboard.getKeyboard());
             return;
         }
         if (BotProcess.VERIFY_TIME.equals(currentProcess) && (userData.getTimeForMessages() != null && !answer)) {
-            sendMessage(chatId, TIME_VALUE_MSG + DATE_FORMATTER_GET_TIME.format(userData.getTimeForMessages()), MainKeyboard.getMainKeyboard());
+            sendMessage(chatId, TIME_VALUE_MSG + DATE_FORMATTER_GET_TIME.format(userData.getTimeForMessages()), MainKeyboard.getKeyboard());
             return;
         }
         if (BotProcess.SET_GOOGLE_CALENDAR_SAVING.equals(currentProcess)) {
@@ -433,10 +438,10 @@ public final class Bot extends TelegramLongPollingCommandBot {
                 try {
                     eventManager.saveEvent(EventMapper.mapToEvent(userData.getNewEvent()), userData.getNewEvent().getIsInGoogleCalendar());
                     userData.setNewEvent(null);
-                    sendMessage(userData.getChatId(), EVENT_SAVING_SUCCESS, MainKeyboard.getMainKeyboard());
+                    sendMessage(userData.getChatId(), EVENT_SAVING_SUCCESS, MainKeyboard.getKeyboard());
                     log.info("Success new event creation");
                 } catch (SQLException | IOException | GeneralSecurityException e) {
-                    sendMessage(userData.getChatId(), EVENT_SAVING_ERROR, MainKeyboard.getMainKeyboard());
+                    sendMessage(userData.getChatId(), EVENT_SAVING_ERROR, MainKeyboard.getKeyboard());
                     log.warn("New event saving error", e);
                 }
             } else {
@@ -471,7 +476,7 @@ public final class Bot extends TelegramLongPollingCommandBot {
     }
 
     private void start(UserData userData) {
-        sendMessage(userData.getChatId(), HELLO_MSG, MainKeyboard.getMainKeyboard());
+        sendMessage(userData.getChatId(), HELLO_MSG, MainKeyboard.getKeyboard());
     }
 
     public void sendMessage(Long chatId, String message, ReplyKeyboardMarkup keyboard) {

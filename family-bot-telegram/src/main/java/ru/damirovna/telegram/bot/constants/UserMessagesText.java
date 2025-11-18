@@ -27,6 +27,7 @@ public class UserMessagesText {
 
     public static final String DO_YOU_WANT_CHANGE_TIME_MSG = "Хотите установить другое время?";
     public static final String DO_YOU_WANT_CREATE_EVENT_MSG = "Хотите создать событие: \n";
+    public static final String NEW_EVENT_CREATION_IS_CANCELLED = "Создание нового события было отменено";
 
     public static final String LOCATION_IS_EMPTY = "Для получения данных о погоде, пожалуйста, отправьте боту свою Геопозицию";
 

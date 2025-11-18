@@ -7,7 +7,7 @@ public class BaseManager {
     protected JdbcTemplate jdbcTemplate;
 
     public BaseManager() {
-        DriverManagerDataSource dataSource = new DriverManagerDataSource("jdbc:postgresql://localhost:5432/telegram", "postgres", "postgres");
+        DriverManagerDataSource dataSource = new DriverManagerDataSource("jdbc:postgresql://localhost:5432/telegram", "postgres", System.getenv("DB_PASSWORD"));
         jdbcTemplate = new JdbcTemplate(dataSource);
     }
 }

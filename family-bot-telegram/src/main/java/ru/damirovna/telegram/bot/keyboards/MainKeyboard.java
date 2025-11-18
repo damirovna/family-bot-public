@@ -8,7 +8,7 @@ import java.util.Arrays;
 import static ru.damirovna.telegram.bot.constants.BotCommands.*;
 
 public class MainKeyboard {
-    public static ReplyKeyboardMarkup getMainKeyboard() {
+    public static ReplyKeyboardMarkup getKeyboard() {
         var row1 = new KeyboardRow();
         row1.add(GET_EVENTS);
         row1.add(GET_WEATHER);

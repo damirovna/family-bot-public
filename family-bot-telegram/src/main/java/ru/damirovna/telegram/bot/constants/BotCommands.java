@@ -14,6 +14,7 @@ public class BotCommands {
     public static final String EDIT_EVENT_END = "Изменить  время конца события";
     public static final String EDIT_EVENT_LOCATION = "Изменить локацию события";
     public static final String EDIT_EVENT_IN_GOOGLE_CALENDAR = "Сохранить в гугл календарь?";
+    public static final String CANCEL_NEW_EVENT_CREATION = "Отменить создание события";
 
     public static final String YES = "Да";
     public static final String NO = "Нет";
