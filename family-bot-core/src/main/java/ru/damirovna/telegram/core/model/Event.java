@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.Calendar;
 
 @Data
-public class Event {
+public class Event implements Comparable<Event> {
 
     private int id;
     private int parentId;
@@ -53,5 +53,10 @@ public class Event {
             event.end.setTimeInMillis(e.getEnd().getDateTime().getValue());
         }
         return event;
+    }
+
+    public int compareTo(Event e) {
+
+        return this.start.compareTo(e.start);
     }
 }

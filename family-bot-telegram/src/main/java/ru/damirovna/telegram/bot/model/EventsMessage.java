@@ -23,7 +23,7 @@ public class EventsMessage {
             return "Нет запланированных событий";
         }
         StringBuilder sb = new StringBuilder();
-        sb.append("Количество событий на ближайшую неделю: ");
+        sb.append("Количество событий: ");
         sb.append(events.size());
         sb.append("\n");
 
@@ -32,6 +32,9 @@ public class EventsMessage {
             if (currentDayOfWeek != e.getStart().get(Calendar.DAY_OF_WEEK)) {
                 sb.append("\n\n<b>");
                 sb.append(DayOfWeek.values()[e.getStart().get(Calendar.DAY_OF_WEEK) - 1].getNameOfWeek());
+                sb.append(" (");
+                sb.append(DATE_FORMATTER_GET_DAY.format(e.getStart().getTime()));
+                sb.append(")");
                 sb.append("</b>");
                 sb.append("\n\n");
                 currentDayOfWeek = e.getStart().get(Calendar.DAY_OF_WEEK);

@@ -19,8 +19,10 @@ public class EditEventKeyboard {
         row4.add(EDIT_EVENT_LOCATION);
         var row5 = new KeyboardRow();
         row5.add(EDIT_EVENT_IN_GOOGLE_CALENDAR);
+        var row6 = new KeyboardRow();
+        row5.add(EDIT_EVENT_DATE);
         return ReplyKeyboardMarkup.builder()
-                .keyboard(Arrays.asList(row1, row2, row3, row4, row5))
+                .keyboard(Arrays.asList(row1, row6, row2, row3, row4, row5))
                 .resizeKeyboard(false)
                 .build();
     }

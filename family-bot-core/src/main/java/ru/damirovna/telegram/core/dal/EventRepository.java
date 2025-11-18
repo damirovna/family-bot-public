@@ -16,6 +16,8 @@ public class EventRepository extends BaseRepository {
             "\tVALUES (?, ?, ?, ?, ?, ?)";
     private static final String FIND_ALL_QUERY = "select * from events";
 
+    private static final String FIND_ALL_WITHOUT_GOOGLE_ID_QUERY = "select * from events where google_id is null";
+
     public EventRepository(JdbcTemplate jdbc, RowMapper mapper) {
         super(jdbc, mapper);
     }
@@ -33,6 +35,10 @@ public class EventRepository extends BaseRepository {
 
     public List<Event> findAll() {
         return findMany(FIND_ALL_QUERY);
+    }
+
+    public List<Event> findAllWithoutGoogleId() {
+        return findMany(FIND_ALL_WITHOUT_GOOGLE_ID_QUERY);
     }
 
 }

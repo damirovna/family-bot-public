@@ -3,7 +3,7 @@ package ru.damirovna.telegram.bot.constants;
 
 import lombok.Data;
 
-import static ru.damirovna.telegram.common.Constants.DATE_FORMATTER_FULL_DATE;
+import static ru.damirovna.telegram.common.Constants.DATE_FORMATTER_GET_DAY_WITH_YEAR;
 import static ru.damirovna.telegram.common.Constants.DATE_FORMATTER_GET_TIME;
 
 @Data
@@ -16,7 +16,10 @@ public class UserMessagesText {
     public static final String TIME_VALUE_MSG = "Установленное время оповещений: ";
     public static final String ENTER_TIME_MSG = "Введите время оповещений: ";
     public static final String ENTER_EVENT_SUMMARY_MSG = "Введите название события";
-    public static final String ENTER_EVENT_START = "Введите время начала события в формате: " + DATE_FORMATTER_FULL_DATE.toPattern();
+    public static final String ENTER_EVENT_START_DATE = "Введите дату начала события: ";
+    public static final String ENTER_EVENT_START_NEW_DATE = "Введите дату начала события в формате " + DATE_FORMATTER_GET_DAY_WITH_YEAR.toPattern() + ":";
+
+    public static final String ENTER_EVENT_START = "Введите время начала события в формате: " + DATE_FORMATTER_GET_TIME.toPattern();
     public static final String ENTER_EVENT_END = "Введите время конца события в формате: " + DATE_FORMATTER_GET_TIME.toPattern();
     public static final String ENTER_EVENT_LOCATION = "Введите локацию события в текстовом формате";
     public static final String ENTER_GOOGLE_CALENDAR_SAVING = "Сохранить в гугл календарь?";

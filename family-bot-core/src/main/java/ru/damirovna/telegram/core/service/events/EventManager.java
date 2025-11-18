@@ -9,10 +9,7 @@ import ru.damirovna.telegram.core.service.BaseManager;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class EventManager extends BaseManager {
     private static final GoogleCalendarManager googleCalendarManager = new GoogleCalendarManager();
@@ -23,7 +20,11 @@ public class EventManager extends BaseManager {
         List<Event> eventsInDB = eventRepository.findAll();
         Set<String> set = new HashSet<>();
         for (Event event : eventsInDB) {
-            set.add(event.getGoogleId());
+            if (event.getGoogleId() != null) {
+                set.add(event.getGoogleId());
+            } else {
+                events.add(event);
+            }
         }
         List<com.google.api.services.calendar.model.Event> googleEvents = googleCalendarManager.getEvents(days);
         for (com.google.api.services.calendar.model.Event e : googleEvents) {
@@ -33,6 +34,7 @@ public class EventManager extends BaseManager {
                 eventRepository.save(coreEvent);
             }
         }
+        Collections.sort(events);
         return events;
     }
 
